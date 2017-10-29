@@ -626,6 +626,7 @@ post_process:
       label_property_value: true
       label_where: >-
         'name' in properties
+      label_where: { name: true }
 
   - fn: vectordatasource.transform.handle_label_placement
     params:
@@ -638,6 +639,12 @@ post_process:
       label_where: >-
         'name' in properties or
         ('sport' in properties and properties.get('kind', 'rock') not in ('rock', 'stone'))
+      label_where:
+        any:
+        - name: true
+        - all:
+            sport: true
+            not: { kind: [ 'rock', 'stone' ] }
 
   # drop mz_label placement at zooms we don't apply handle_label_placement
   - fn: vectordatasource.transform.drop_properties
@@ -658,6 +665,7 @@ post_process:
       label_property_value: true
       label_where: >-
         'name' in properties
+      label_where: { name: true }
 
   # drop mz_label placement at zooms we don't apply handle_label_placement
   - fn: vectordatasource.transform.drop_properties
@@ -693,6 +701,9 @@ post_process:
       start_zoom: 3
       where: >-
         'label_placement' not in properties and kind in ('sea', 'bay', 'strait', 'fjord')
+      where:
+        label_placement: false
+        kind: ['sea', 'bay', 'strait', 'fjord']
   - fn: vectordatasource.transform.drop_features_where
     params:
       source_layer: earth
@@ -700,6 +711,9 @@ post_process:
       where: >-
         'label_placement' not in properties and kind in
         ('archipelago', 'island', 'islet', 'continent', 'valley', 'ridge')
+      where:
+        label_placement: false
+        kind: ['archipelago', 'island', 'islet', 'continent', 'valley', 'ridge']
 
   # merge water and earth polygons, see https://github.com/tilezen/vector-datasource/issues/1106
   - fn: vectordatasource.transform.merge_polygon_features
@@ -734,6 +748,16 @@ post_process:
       where: >-
         properties.get('mz_is_building') is True and
         properties.get('label_placement') is None
+      where:
+        - osm_tags:
+          - any:
+            - all:
+              - building: true
+              - not: { building: 'no' }
+            - all:
+              - "building:part": true
+              - not: { "building:part": 'no' }
+        - label_placement: false
   - fn: vectordatasource.transform.merge_duplicate_stations
     params:
       source_layer: pois
